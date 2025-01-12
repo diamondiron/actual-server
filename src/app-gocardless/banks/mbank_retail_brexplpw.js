@@ -7,31 +7,11 @@ import { formatPayeeName } from '../../util/payee-name.js';
 export default {
   ...Fallback,
 
-  institutionIds: ['NBG_ETHNGRAAXXX'],
+  institutionIds: ['MBANK_RETAIL_BREXPLPW'],
 
-  accessValidForDays: 180,
+  accessValidForDays: 179,
 
-  /**
-   * Fixes for the pending transactions:
-   * - Corrects amount to negative (nbg erroneously omits the minus sign in pending transactions)
-   * - Removes prefix 'ΑΓΟΡΑ' from remittance information to align with the booked transaction (necessary for fuzzy matching to work)
-   */
   normalizeTransaction(transaction, _booked) {
-    if (
-      !transaction.transactionId &&
-      transaction.remittanceInformationUnstructured.startsWith('ΑΓΟΡΑ ')
-    ) {
-      transaction = {
-        ...transaction,
-        transactionAmount: {
-          amount: '-' + transaction.transactionAmount.amount,
-          currency: transaction.transactionAmount.currency,
-        },
-        remittanceInformationUnstructured:
-          transaction.remittanceInformationUnstructured.substring(6),
-      };
-    }
-
     return {
       ...transaction,
       payeeName: formatPayeeName(transaction),
@@ -39,8 +19,14 @@ export default {
     };
   },
 
+  sortTransactions(transactions = []) {
+    return transactions.sort(
+      (a, b) => Number(b.transactionId) - Number(a.transactionId),
+    );
+  },
+
   /**
-   *  For NBG_ETHNGRAAXXX we don't know what balance was
+   *  For MBANK_RETAIL_BREXPLPW we don't know what balance was
    *  after each transaction so we have to calculate it by getting
    *  current balance from the account and subtract all the transactions
    *
@@ -49,7 +35,7 @@ export default {
    */
   calculateStartingBalance(sortedTransactions = [], balances = []) {
     const currentBalance = balances.find(
-      (balance) => 'interimAvailable' === balance.balanceType,
+      (balance) => 'interimBooked' === balance.balanceType,
     );
 
     return sortedTransactions.reduce((total, trans) => {

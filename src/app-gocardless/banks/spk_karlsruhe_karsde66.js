@@ -7,7 +7,7 @@ import { formatPayeeName } from '../../util/payee-name.js';
 export default {
   ...Fallback,
 
-  institutionIds: ['BERLINER_SPARKASSE_BELADEBEXXX'],
+  institutionIds: ['SPK_KARLSRUHE_KARSDE66XXX'],
 
   accessValidForDays: 180,
 

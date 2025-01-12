@@ -7,34 +7,24 @@ import { formatPayeeName } from '../../util/payee-name.js';
 export default {
   ...Fallback,
 
-  institutionIds: ['ABNAMRO_ABNANL2A'],
+  institutionIds: ['ING_PL_INGBPLPW'],
 
   accessValidForDays: 180,
 
   normalizeTransaction(transaction, _booked) {
-    // There is no remittanceInformationUnstructured, so we'll make it
-    transaction.remittanceInformationUnstructured =
-      transaction.remittanceInformationUnstructuredArray.join(', ');
-
-    // Remove clutter to extract the payee from remittanceInformationUnstructured ...
-    // ... when not otherwise provided.
-    const payeeName = transaction.remittanceInformationUnstructuredArray
-      .map((el) => el.match(/^(?:.*\*)?(.+),PAS\d+$/))
-      .find((match) => match)?.[1];
-    transaction.debtorName = transaction.debtorName || payeeName;
-    transaction.creditorName = transaction.creditorName || payeeName;
-
     return {
       ...transaction,
       payeeName: formatPayeeName(transaction),
-      date: transaction.valueDateTime.slice(0, 10),
+      date: transaction.valueDate ?? transaction.bookingDate,
     };
   },
 
   sortTransactions(transactions = []) {
-    return transactions.sort(
-      (a, b) => +new Date(b.valueDateTime) - +new Date(a.valueDateTime),
-    );
+    return transactions.sort((a, b) => {
+      return (
+        Number(b.transactionId.substr(2)) - Number(a.transactionId.substr(2))
+      );
+    });
   },
 
   calculateStartingBalance(sortedTransactions = [], balances = []) {
